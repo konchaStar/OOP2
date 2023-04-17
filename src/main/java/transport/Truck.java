@@ -2,9 +2,12 @@ package transport;
 
 import GUI.Name;
 import fabrics.Number;
+import serializer.Serializer;
+
+import java.io.Serializable;
 
 @Name("Грузовик")
-public class Truck extends MotorizedVehicle{
+public class Truck extends MotorizedVehicle implements Serializable {
     public Truck(){
 
     }

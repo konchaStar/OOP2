@@ -2,9 +2,11 @@ package transport;
 
 import GUI.Name;
 
+import java.io.Serializable;
+
 
 @Name("Автобус")
-public class Bus extends MotorizedVehicle{
+public class Bus extends MotorizedVehicle implements Serializable {
     public Bus() {
 
     }

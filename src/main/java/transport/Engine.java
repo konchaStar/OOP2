@@ -3,7 +3,9 @@ package transport;
 import GUI.Name;
 import fabrics.Number;
 
-public class Engine {
+import java.io.Serializable;
+
+public class Engine implements Serializable {
     private int power;
     private int pistonsAmount;
     public Engine(int power, int pistons){

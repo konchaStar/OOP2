@@ -1,6 +1,6 @@
 package GUI;
 
-import com.oop.oop2.Controller;
+import by.oop.oop2.Controller;
 import fabrics.Factory;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -19,10 +19,8 @@ public class Windows {
         VBox container = new VBox();
         ChoiceBox<String> type = new ChoiceBox<>();
         HBox fields = new HBox();
-        for(Class<? extends Transport> availableClass : Controller.getAvailableClasses()){
-            if(availableClass.isAnnotationPresent(Name.class)){
-                type.getItems().add(availableClass.getAnnotation(Name.class).value());
-            }
+        for(String availableClass : Controller.getFactories().keySet()){
+            type.getItems().add(availableClass);
         }
         TextField name = new TextField();
         type.setOnAction(x -> {
@@ -47,7 +45,7 @@ public class Windows {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setContentText("Check all fields!");
                 alert.showAndWait();
-            } else if(Controller.addTransport(factory.getTransport(addBox), name.getText(), type.getValue())) {
+            } else if(Controller.addTransport(factory.getTransport(addBox), name.getText())) {
                 stage.close();
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -60,14 +58,15 @@ public class Windows {
         stage.setResizable(true);
         stage.show();
     }
-    public static void showEditWindow(String type, String name, Optional<? extends Transport> transport) {
+    public static void showEditWindow(String type, String name, Optional<? extends Transport> transport, int index) {
         Stage stage = new Stage();
         VBox container = new VBox();
         HBox fields = new HBox();
         Factory factory = Controller.getFactories().get(type);
         changeBox.getChildren().clear();
+        TextField nameField = new TextField(name);
         changeBox.getChildren().add(new VBox(new Label("Название")));
-        changeBox.getChildren().add(new VBox(new Label(name)));
+        changeBox.getChildren().add(new VBox(nameField));
         factory.getFields(changeBox, transport);
         container.getChildren().add(changeBox);
         Button addButton = new Button("Сохранить");
@@ -78,7 +77,8 @@ public class Windows {
         });
         addButton.setOnMousePressed(x -> {
             Factory saveFactory = Controller.getFactories().get(type);
-            if(Controller.changeTransport(factory.getTransport(changeBox), name)) {
+
+            if(!nameField.getText().equals("") && Controller.changeTransport(factory.getTransport(changeBox), nameField.getText(), index)) {
                 stage.close();
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);

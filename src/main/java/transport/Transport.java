@@ -3,7 +3,9 @@ package transport;
 import GUI.Name;
 import fabrics.Number;
 
-public abstract class Transport {
+import java.io.Serializable;
+
+public abstract class Transport implements Serializable {
     protected int numberOfSeats;
     protected String color;
     protected String brand;

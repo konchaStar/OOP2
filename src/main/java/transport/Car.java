@@ -1,9 +1,12 @@
 package transport;
 
 import GUI.Name;
+import serializer.Serializer;
+
+import java.io.Serializable;
 
 @Name("Автомобиль")
-public class Car extends MotorizedVehicle {
+public class Car extends MotorizedVehicle implements Serializable {
     public enum CarTypes{
         SEDAN, MINIVAN, SPORTCAR, HATCHBACK;
     }

@@ -2,7 +2,9 @@ package transport;
 
 import GUI.Name;
 
-public abstract class MotorizedVehicle extends Transport{
+import java.io.Serializable;
+
+public abstract class MotorizedVehicle extends Transport implements Serializable {
     protected String number;
     protected Engine engine;
     public MotorizedVehicle(String brand, String number, Engine engine, String color, int numberOfSeats, int wheelsAmount){
