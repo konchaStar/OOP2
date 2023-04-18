@@ -14,18 +14,18 @@ public class Bus extends MotorizedVehicle implements Serializable {
     public enum BusTypes {
         SCHOOL, COACH, TRANSIT;
     }
-    private BusTypes type;
+    private BusTypes busType;
     public Bus(String brand, String color, BusTypes type, Engine engine, String number, int seats, int wheels){
         super(brand, number, engine, color, seats, wheels);
-        this.type = type;
+        this.busType = type;
     }
     @Name("Тип")
-    public BusTypes getType() {
-        return type;
+    public BusTypes getBusType() {
+        return busType;
     }
     @Name("Тип")
-    public void setType(BusTypes type) {
-        this.type = type;
+    public void setBusType(BusTypes type) {
+        this.busType = type;
     }
 
 }

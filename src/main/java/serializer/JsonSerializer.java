@@ -1,5 +1,6 @@
 package serializer;
 
+import by.oop.oop2.MyPair;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -17,21 +18,31 @@ public class JsonSerializer implements Serializer {
     registerSubtype(Car.class, "car").registerSubtype(Truck.class, "truck").registerSubtype(Bicycle.class, "bicycle").
             registerSubtype(MotorizedBoat.class, "motorizedBoat").registerSubtype(Bus.class, "bus");
     @Override
-    public void serialize(ArrayList<Pair<String, Transport>> transport, File file) {
+    public void serialize(ArrayList<MyPair<String, Transport>> transport, File file) {
         Gson gson = new GsonBuilder().registerTypeAdapterFactory(typeAdapterFactory).create();
-        Type type = new TypeToken<ArrayList<Pair<String, Transport>>>(){}.getType();
+        //Gson gson = new Gson();
+        Type type = new TypeToken<ArrayList<MyPair<String, Transport>>>(){}.getType();
         try {
             FileWriter stream = new FileWriter(file);
             String json = gson.toJson(transport, type);
             stream.write(json);
             stream.close();
         } catch (Exception e) {
+            e.printStackTrace();
             new Alert(Alert.AlertType.ERROR, "Невозможно записать в файл!").showAndWait();
         }
     }
 
     @Override
-    public ArrayList<Pair<String, Transport>> deserialize(File file) {
-        return null;
+    public ArrayList<MyPair<String, Transport>> deserialize(File file) {
+        Gson gson = new Gson().newBuilder().registerTypeAdapterFactory(typeAdapterFactory).create();
+        Type type = new TypeToken<ArrayList<MyPair<String, Transport>>>(){}.getType();
+        String json = "";
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
+            json = bufferedReader.readLine();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Невозможно прочитать данные из файла!");
+        }
+        return gson.fromJson(json, type);
     }
 }

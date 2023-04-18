@@ -1,5 +1,6 @@
 package serializer;
 
+import by.oop.oop2.MyPair;
 import javafx.scene.control.Alert;
 import javafx.util.Pair;
 import transport.Transport;
@@ -9,7 +10,7 @@ import java.util.ArrayList;
 
 public class BinarySerializer implements Serializer {
     @Override
-    public void serialize(ArrayList<Pair<String, Transport>> transport, File file) {
+    public void serialize(ArrayList<MyPair<String, Transport>> transport, File file) {
         try {
             ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(file));
             stream.writeObject(transport);
@@ -19,11 +20,11 @@ public class BinarySerializer implements Serializer {
     }
 
     @Override
-    public ArrayList<Pair<String, Transport>> deserialize(File file) {
-        ArrayList<Pair<String, Transport>> transport = null;
+    public ArrayList<MyPair<String, Transport>> deserialize(File file) {
+        ArrayList<MyPair<String, Transport>> transport = null;
         try {
             ObjectInputStream stream = new ObjectInputStream(new FileInputStream(file));
-            transport = (ArrayList<Pair<String, Transport>>) stream.readObject();
+            transport = (ArrayList<MyPair<String, Transport>>) stream.readObject();
         } catch (IOException e) {
             new Alert(Alert.AlertType.ERROR, "Невозможно прочитать данные из файла!").showAndWait();
         } catch (ClassNotFoundException e) {

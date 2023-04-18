@@ -13,6 +13,7 @@ import javafx.util.Pair;
 import serializer.BinarySerializer;
 import serializer.JsonSerializer;
 import serializer.Serializer;
+import serializer.TextSerializer;
 import transport.*;
 import fabrics.*;
 
@@ -24,7 +25,7 @@ import java.util.*;
 public class Controller implements Initializable {
     private static ObservableList<String> names;
     private static ObservableList<String> types;
-    private static ArrayList<Pair<String, Transport>> transport = new ArrayList<>();
+    private static ArrayList<MyPair<String, Transport>> transport = new ArrayList<>();
     private static HashMap<String, Factory> factories = new HashMap<>();
     private static HashMap<String, Serializer> serializers = new HashMap<>();
 
@@ -38,7 +39,7 @@ public class Controller implements Initializable {
         if(transport.isEmpty()){
             return false;
         }
-        Controller.transport.add(new Pair(name, transport.get()));
+        Controller.transport.add(new MyPair(name, transport.get()));
         names.add(name);
         types.add(transport.get().getClass().getAnnotation(Name.class).value());
         return true;
@@ -47,7 +48,7 @@ public class Controller implements Initializable {
         if(transport.isEmpty()){
             return false;
         }
-        Controller.transport.set(index, new Pair<>(name, transport.get()));
+        Controller.transport.set(index, new MyPair<>(name, transport.get()));
         names.remove(index);
         names.add(index, name);
         return true;
@@ -107,8 +108,8 @@ public class Controller implements Initializable {
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files (*.txt)","*.txt"));
         File file = chooser.showOpenDialog(Application.stStage);
         Serializer serializer = serializers.get(file.getName().substring(file.getName().lastIndexOf(".")));
-        ArrayList<Pair<String, Transport>> transports = serializer.deserialize(file);
-        for(Pair<String, Transport> transport : transports) {
+        ArrayList<MyPair<String, Transport>> transports = serializer.deserialize(file);
+        for(MyPair<String, Transport> transport : transports) {
             addTransport(Optional.of(transport.getValue()), transport.getKey());
         }
     }
@@ -119,6 +120,8 @@ public class Controller implements Initializable {
         types = objectsTypeList.getItems();
         serializers.put(".bin", new BinarySerializer());
         serializers.put(".json", new JsonSerializer());
+        serializers.put(".txt", new TextSerializer());
+        
 //        addTransport(Optional.of(new Car("bmw", "red", new Engine(20000, 6), "1234", Car.CarTypes.SPORTCAR, 5, 4)), "Моя машина");
 //        addTransport(Optional.of(new Bicycle("stels", "blue", 24, 2, 1)), "Мой байк");
 //        addTransport(Optional.of(new Bus("mercedes", "yellow", Bus.BusTypes.SCHOOL, new Engine(10000, 6), "5647", 20, 4)), "Школьный автобус");

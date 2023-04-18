@@ -33,4 +33,9 @@ public class Engine implements Serializable {
     public void setPistonsAmount(int pistonsAmount) {
         this.pistonsAmount = pistonsAmount;
     }
+
+    @Override
+    public String toString() {
+        return new String("PistonsAmount:" + pistonsAmount + ";Power:" + power + ";");
+    }
 }

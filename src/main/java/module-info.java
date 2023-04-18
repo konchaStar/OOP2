@@ -7,8 +7,10 @@ module com.oop.oop2 {
     requires com.google.gson;
     requires gson.extras;
 
-    opens by.oop.oop2 to javafx.fxml;
+    opens by.oop.oop2 to javafx.fxml, com.google.gson;
     exports by.oop.oop2;
     exports fabrics;
+
+    opens transport to com.google.gson;
     opens fabrics to javafx.fxml;
 }
