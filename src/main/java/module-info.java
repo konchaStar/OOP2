@@ -6,6 +6,7 @@ module com.oop.oop2 {
     requires com.dlsc.formsfx;
     requires com.google.gson;
     requires gson.extras;
+    requires org.apache.commons.codec;
 
     opens by.oop.oop2 to javafx.fxml, com.google.gson;
     exports by.oop.oop2;

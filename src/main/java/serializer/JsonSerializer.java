@@ -17,6 +17,12 @@ public class JsonSerializer implements Serializer {
     private final RuntimeTypeAdapterFactory<Transport> typeAdapterFactory = RuntimeTypeAdapterFactory.of(Transport.class, "type").
     registerSubtype(Car.class, "car").registerSubtype(Truck.class, "truck").registerSubtype(Bicycle.class, "bicycle").
             registerSubtype(MotorizedBoat.class, "motorizedBoat").registerSubtype(Bus.class, "bus");
+
+    @Override
+    public String getExtension() {
+        return "JSON files(*.json)";
+    }
+
     @Override
     public void serialize(ArrayList<MyPair<String, Transport>> transport, File file) {
         Gson gson = new GsonBuilder().registerTypeAdapterFactory(typeAdapterFactory).create();

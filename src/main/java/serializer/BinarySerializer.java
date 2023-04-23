@@ -10,6 +10,11 @@ import java.util.ArrayList;
 
 public class BinarySerializer implements Serializer {
     @Override
+    public String getExtension() {
+        return "Binary file(*.bin)";
+    }
+
+    @Override
     public void serialize(ArrayList<MyPair<String, Transport>> transport, File file) {
         try {
             ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(file));

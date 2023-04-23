@@ -18,6 +18,11 @@ import java.util.Map;
 
 public class TextSerializer implements Serializer {
     @Override
+    public String getExtension() {
+        return "Text files(*.txt)";
+    }
+
+    @Override
     public void serialize(ArrayList<MyPair<String, Transport>> transport, File file) {
         try {
             BufferedWriter stream = new BufferedWriter(new FileWriter(file));
@@ -35,7 +40,14 @@ public class TextSerializer implements Serializer {
                     if(field.equals("Engine")) {
                         builder.append("[").append(getters.get(field).invoke(tr.getValue())).append("]");
                     } else {
-                        builder.append(getters.get(field).invoke(tr.getValue()));
+
+                        if(getters.get(field).getReturnType().getSimpleName().equals("String")) {
+                            String value = (String) getters.get(field).invoke(tr.getValue());
+                            value = hideParentheses(value);
+                            builder.append(value);
+                        } else {
+                            builder.append(getters.get(field).invoke(tr.getValue()));
+                        }
                     }
                     builder.append(";");
                 }
@@ -53,7 +65,33 @@ public class TextSerializer implements Serializer {
             new Alert(Alert.AlertType.ERROR, "Невозможно сохранить в файл!").showAndWait();
         }
     }
-
+    private String hideParentheses(String str) {
+        String[] splitters = {"\\", ":", "[", ";", "]"};
+        for(int i = 0; i < 5; i++) {
+            int index = 0;
+            while(str.indexOf(splitters[i], index) != -1) {
+                StringBuilder builder = new StringBuilder(str);
+                builder.insert(str.indexOf(splitters[i], index), "\\");
+                str = builder.toString();
+                index = str.indexOf(splitters[i], index) + 1  + (i == 0 ? 1 : 0);
+            }
+        }
+        return str;
+    }
+    private String removeBackSlash(String str) {
+        String[] splitters = {"\\:", "\\[", "\\;", "\\]", "\\\\"};
+        for(int i = 0; i < 5; i++) {
+            int index = 0;
+            while(str.indexOf(splitters[i], index) != -1) {
+                index = str.indexOf(splitters[i], index);
+                StringBuilder builder = new StringBuilder(str);
+                builder.replace(str.indexOf(splitters[i], index), str.indexOf(splitters[i], index) + 1, "");
+                str = builder.toString();
+                index++;
+            }
+        }
+        return str;
+    }
     @Override
     public ArrayList<MyPair<String, Transport>> deserialize(File file) {
         ArrayList<MyPair<String, Transport>> transports = new ArrayList<>();
@@ -69,12 +107,19 @@ public class TextSerializer implements Serializer {
                 while(index < line.length()) {
                     String part = "";
                     boolean skip = false;
-                    while(line.toCharArray()[index] != ';' || skip){
-                        if(line.toCharArray()[index] == '[') {
+                    int bs = 0;
+                    while(line.toCharArray()[index] != ';' || (line.toCharArray()[index - 1] == '\\' && ((bs & 1) == 1)) || skip){
+                        if(line.toCharArray()[index] == '[' && line.toCharArray()[index - 1] != '\\') {
                             skip = true;
                         }
-                        if(line.toCharArray()[index] == ']'){
+                        if(line.toCharArray()[index] == ']' && line.toCharArray()[index - 1] != '\\'){
                             skip = false;
+                        }
+                        if(line.toCharArray()[index] != '\\' && bs != 0) {
+                            bs = 0;
+                        }
+                        if(line.toCharArray()[index] == '\\'){
+                            bs++;
                         }
                         part = part + line.toCharArray()[index];
                         index++;
@@ -94,11 +139,11 @@ public class TextSerializer implements Serializer {
                             types.put(getter.getName().substring(getter.getName().indexOf("get") + 3),
                                     getter.getReturnType().getSimpleName());
                         }
-                    } else if (field.equals("Engine")) {
-                        Engine engine = getEngine(value);
-                        setters.get(field).invoke(transport, engine);
                     } else {
                         switch (types.get(field)) {
+                            case "Engine" -> {
+                                setters.get(field).invoke(transport, getEngine(value));
+                            }
                             case "int" -> {
                                 setters.get(field).invoke(transport, Integer.valueOf(value));
                             }
@@ -109,7 +154,7 @@ public class TextSerializer implements Serializer {
                                 setters.get(field).invoke(transport, Bus.BusTypes.valueOf(value));
                             }
                             case "String" -> {
-                                setters.get(field).invoke(transport, value);
+                                setters.get(field).invoke(transport, removeBackSlash(value));
                             }
                         }
                     }

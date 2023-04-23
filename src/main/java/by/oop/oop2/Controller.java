@@ -7,9 +7,13 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ListView;
+import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 import javafx.util.Pair;
+import plugins.Plugin;
+import plugins.base.Base32Plugin;
 import serializer.BinarySerializer;
 import serializer.JsonSerializer;
 import serializer.Serializer;
@@ -17,7 +21,8 @@ import serializer.TextSerializer;
 import transport.*;
 import fabrics.*;
 
-import java.io.File;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.*;
 
@@ -28,7 +33,15 @@ public class Controller implements Initializable {
     private static ArrayList<MyPair<String, Transport>> transport = new ArrayList<>();
     private static HashMap<String, Factory> factories = new HashMap<>();
     private static HashMap<String, Serializer> serializers = new HashMap<>();
-
+    private static HashMap<String, Plugin> plugins = new HashMap<>();
+    @FXML
+    private Button btnConfirm;
+    @FXML
+    private Button btnCancel;
+    @FXML
+    private ChoiceBox<String> pluginChoice;
+    @FXML
+    private Pane pluginPane;
     @FXML
     private ListView<String> objectsList;
     @FXML
@@ -87,35 +100,147 @@ public class Controller implements Initializable {
     }
     @FXML
     private void onSave() {
+        loadPlugins();
+        showPluginPane();
+    }
+    @FXML
+    private void onConfirm() {
         try {
             FileChooser chooser = new FileChooser();
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Binary files (*.bin)", "*.bin"));
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Json files (*.json)", "*.json"));
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt"));
+            for(String extension : serializers.keySet()) {
+                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                        serializers.get(extension).getExtension(), "*" + extension));
+            }
             File file = chooser.showOpenDialog(Application.stStage);
-            Serializer serializer = serializers.get(file.getName().substring(file.getName().lastIndexOf(".")));
-
-            serializer.serialize(transport, file);
+            if(file != null) {
+                Serializer serializer = serializers.get(file.getName().substring(file.getName().lastIndexOf(".")));
+                serializer.serialize(transport, file);
+                if(!pluginChoice.getValue().equals("None")) {
+                    encode(file);
+                }
+                hidePluginPane();
+            }
         } catch (Exception e) {
             System.out.println("file not found");
         }
     }
+    private void encode(File file) {
+        try {
+            FileInputStream stream = new FileInputStream(file);
+            byte[] data = stream.readAllBytes();
+            data = plugins.get(pluginChoice.getValue()).encode(data);
+            stream.close();
+            FileOutputStream output = new FileOutputStream(file);
+            output.write(data);
+            output.close();
+            file.renameTo(new File(file.getPath() + plugins.get(pluginChoice.getValue()).getExtension()));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
     @FXML
     private void onOpen() {
-        FileChooser chooser = new FileChooser();
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Binary files (*.bin)","*.bin"));
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Json files (*.json)","*.json"));
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files (*.txt)","*.txt"));
-        File file = chooser.showOpenDialog(Application.stStage);
-        Serializer serializer = serializers.get(file.getName().substring(file.getName().lastIndexOf(".")));
-        ArrayList<MyPair<String, Transport>> transports = serializer.deserialize(file);
-        for(MyPair<String, Transport> transport : transports) {
-            addTransport(Optional.of(transport.getValue()), transport.getKey());
+        loadPlugins();
+        try {
+            FileChooser chooser = new FileChooser();
+            List<String> extensions = new ArrayList<>();
+            for (String extension : serializers.keySet()) {
+                extensions.clear();
+                extensions.add("*" + extension);
+                for(String name : plugins.keySet()) {
+                    extensions.add("*" + extension + plugins.get(name).getExtension());
+                }
+                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                        serializers.get(extension).getExtension(), extensions));
+                extensions.remove("*" + extension);
+            }
+
+            File file = chooser.showOpenDialog(Application.stStage);
+            if(file != null) {
+                byte[] data = null;
+                String extension = file.getName().substring(file.getName().lastIndexOf("."));
+                if(isEncoded(file.getName())) {
+                    data = decode(file);
+                    extension = file.getName().substring(0, file.getName().lastIndexOf("."));
+                    extension = extension.substring(extension.lastIndexOf("."));
+                }
+                Serializer serializer = serializers.get(extension);
+                ArrayList<MyPair<String, Transport>> transports = serializer.deserialize(file);
+                for (MyPair<String, Transport> transport : transports) {
+                    addTransport(Optional.of(transport.getValue()), transport.getKey());
+                }
+                if(isEncoded(file.getName())) {
+                    FileOutputStream stream = new FileOutputStream(file);
+                    stream.write(data);
+                    stream.close();
+                }
+            }
+        } catch (Exception e){
+            System.out.println("file not found");
+        }
+    }
+    private boolean isEncoded(String name) {
+        for(String plugin : plugins.keySet()){
+            if(plugins.get(plugin).getExtension().equals(name.substring(name.lastIndexOf(".")))) return true;
+        }
+        return false;
+    }
+    private byte[] decode(File file) {
+        try {
+            FileInputStream stream = new FileInputStream(file);
+            byte[] data = stream.readAllBytes();
+            Plugin plugin = null;
+            for(String name : plugins.keySet()) {
+                if(plugins.get(name).getExtension().equals(file.getName().substring(file.getName().lastIndexOf(".")))){
+                    plugin = plugins.get(name);
+                    break;
+                }
+            }
+            stream.close();
+            FileOutputStream output = new FileOutputStream(file);
+            output.write(plugin.decode(data));
+            output.close();
+            return data;
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private void showPluginPane() {
+        pluginChoice.getItems().clear();
+        pluginChoice.getItems().add("None");
+        pluginChoice.setValue("None");
+        for(String plugin : plugins.keySet()) {
+            pluginChoice.getItems().add(plugin);
+        }
+        pluginPane.setVisible(true);
+    }
+    @FXML
+    private void hidePluginPane() {
+        pluginPane.setVisible(false);
+    }
+    private void loadPlugins() {
+        String path = "src/main/java/plugins/base";
+        String pack = "plugins.base.";
+        File dir = new File(path);
+        plugins.clear();
+        for(File file : dir.listFiles()) {
+            try {
+                String name = file.getName().substring(0, file.getName().lastIndexOf("."));
+                Plugin plugin = (Plugin) Class.forName(pack + name).getConstructor().newInstance();
+                plugins.put(plugin.getName(), plugin);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         initFabrics();
+        hidePluginPane();
         names = objectsList.getItems();
         types = objectsTypeList.getItems();
         serializers.put(".bin", new BinarySerializer());
