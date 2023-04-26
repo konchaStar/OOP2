@@ -2,29 +2,26 @@ package by.oop.oop2;
 
 import GUI.Name;
 import GUI.Windows;
-import fabrics.Factory;
+import fabrics.*;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
-import javafx.util.Pair;
-import plugins.Plugin;
-import plugins.base.Base32Plugin;
-import serializer.BinarySerializer;
-import serializer.JsonSerializer;
-import serializer.Serializer;
-import serializer.TextSerializer;
+import org.example.*;
+import serializer.*;
 import transport.*;
-import fabrics.*;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 
 public class Controller implements Initializable {
@@ -100,7 +97,6 @@ public class Controller implements Initializable {
     }
     @FXML
     private void onSave() {
-        loadPlugins();
         showPluginPane();
     }
     @FXML
@@ -108,12 +104,24 @@ public class Controller implements Initializable {
         try {
             FileChooser chooser = new FileChooser();
             for(String extension : serializers.keySet()) {
+                String extensions = "*" + extension;
+                String info = serializers.get(extension).getExtension() + "(*" + extension;
+                if(!pluginChoice.getValue().equals("None")) {
+                    extensions = extensions + plugins.get(pluginChoice.getValue()).getExtension();
+                    info = info + plugins.get(pluginChoice.getValue()).getExtension();
+                }
+                info = info + ")";
                 chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
-                        serializers.get(extension).getExtension(), "*" + extension));
+                        serializers.get(extension).getExtension(), extensions));
             }
             File file = chooser.showOpenDialog(Application.stStage);
             if(file != null) {
-                Serializer serializer = serializers.get(file.getName().substring(file.getName().lastIndexOf(".")));
+                String extension = file.getName().substring(file.getName().lastIndexOf("."));
+                if(isEncoded(file.getName())) {
+                    extension = file.getName().substring(0, file.getName().lastIndexOf("."));
+                    extension = extension.substring(extension.lastIndexOf("."));
+                }
+                Serializer serializer = serializers.get(extension);
                 serializer.serialize(transport, file);
                 if(!pluginChoice.getValue().equals("None")) {
                     encode(file);
@@ -133,27 +141,28 @@ public class Controller implements Initializable {
             FileOutputStream output = new FileOutputStream(file);
             output.write(data);
             output.close();
-            file.renameTo(new File(file.getPath() + plugins.get(pluginChoice.getValue()).getExtension()));
         } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+            new Alert(Alert.AlertType.ERROR, "Не удалось применить плагин").showAndWait();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            new Alert(Alert.AlertType.ERROR, "Не удалось применить плагин").showAndWait();
         }
     }
     @FXML
     private void onOpen() {
-        loadPlugins();
         try {
             FileChooser chooser = new FileChooser();
             List<String> extensions = new ArrayList<>();
             for (String extension : serializers.keySet()) {
+                String info = serializers.get(extension).getExtension() + "(*" + extension;
                 extensions.clear();
                 extensions.add("*" + extension);
                 for(String name : plugins.keySet()) {
                     extensions.add("*" + extension + plugins.get(name).getExtension());
+                    info = info + ", *" + plugins.get(name).getExtension();
                 }
+                info = info + ")";
                 chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
-                        serializers.get(extension).getExtension(), extensions));
+                        info, extensions));
                 extensions.remove("*" + extension);
             }
 
@@ -223,17 +232,29 @@ public class Controller implements Initializable {
         pluginPane.setVisible(false);
     }
     private void loadPlugins() {
-        String path = "src/main/java/plugins/base";
-        String pack = "plugins.base.";
+        String path = "src/main/java/plugins";
         File dir = new File(path);
-        plugins.clear();
         for(File file : dir.listFiles()) {
             try {
-                String name = file.getName().substring(0, file.getName().lastIndexOf("."));
-                Plugin plugin = (Plugin) Class.forName(pack + name).getConstructor().newInstance();
-                plugins.put(plugin.getName(), plugin);
+                String pathToJar = file.getPath();
+                JarFile jarFile = new JarFile(pathToJar);
+                Enumeration<JarEntry> entry = jarFile.entries();
+
+                URL[] urls = {new URL("jar:file:" + pathToJar + "!/")};
+                URLClassLoader cl = URLClassLoader.newInstance(urls);
+
+                while (entry.hasMoreElements()) {
+                    JarEntry jarEntry = entry.nextElement();
+                    if (jarEntry.isDirectory() || !jarEntry.getName().endsWith(".class")) {
+                        continue;
+                    }
+                    String className = jarEntry.getName().substring(0, jarEntry.getName().length() - 6);
+                    className = className.replace('/', '.');
+                    Plugin plugin = (Plugin) cl.loadClass(className).getConstructor().newInstance();
+                    plugins.put(plugin.getName(), plugin);
+                }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                new Alert(Alert.AlertType.ERROR, "Не удалось загрузить плагины").showAndWait();
             }
         }
     }
@@ -246,7 +267,7 @@ public class Controller implements Initializable {
         serializers.put(".bin", new BinarySerializer());
         serializers.put(".json", new JsonSerializer());
         serializers.put(".txt", new TextSerializer());
-        
+        loadPlugins();
 //        addTransport(Optional.of(new Car("bmw", "red", new Engine(20000, 6), "1234", Car.CarTypes.SPORTCAR, 5, 4)), "Моя машина");
 //        addTransport(Optional.of(new Bicycle("stels", "blue", 24, 2, 1)), "Мой байк");
 //        addTransport(Optional.of(new Bus("mercedes", "yellow", Bus.BusTypes.SCHOOL, new Engine(10000, 6), "5647", 20, 4)), "Школьный автобус");

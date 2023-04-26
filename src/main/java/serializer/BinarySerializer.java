@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class BinarySerializer implements Serializer {
     @Override
     public String getExtension() {
-        return "Binary file(*.bin)";
+        return "Binary file";
     }
 
     @Override

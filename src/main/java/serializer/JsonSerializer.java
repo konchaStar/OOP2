@@ -20,7 +20,7 @@ public class JsonSerializer implements Serializer {
 
     @Override
     public String getExtension() {
-        return "JSON files(*.json)";
+        return "JSON files";
     }
 
     @Override

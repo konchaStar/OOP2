@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="xeustechnologies.jcl.core" type="repository">
+    <properties maven-id="org.xeustechnologies:jcl-core:2.8" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/jcl-core-2.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/objenesis-2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/cglib-nodep-2.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/object-cloner-0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -19,7 +19,7 @@ import java.util.Map;
 public class TextSerializer implements Serializer {
     @Override
     public String getExtension() {
-        return "Text files(*.txt)";
+        return "Text files";
     }
 
     @Override
